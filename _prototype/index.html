@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vibe Coding Terminal Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="stage" aria-label="Cinematic fake developer terminal simulation">
+      <section class="terminal-shell" id="terminalShell">
+        <header class="topbar">
+          <div class="window-controls" aria-hidden="true">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="title-stack">
+            <span class="title">ai-dev-agent / notes-app</span>
+            <span class="subtitle" id="subtitle">awaiting prompt</span>
+          </div>
+          <div class="run-status ready">
+            <span class="pulse" aria-hidden="true"></span>
+            <span id="statusText">READY</span>
+          </div>
+        </header>
+
+        <div class="workspace">
+          <aside class="sidebar" aria-label="Build telemetry">
+            <div class="panel request-panel">
+              <label class="panel-label" for="requestInput">User Request</label>
+              <textarea id="requestInput" rows="3" spellcheck="false"></textarea>
+              <button class="run-button" id="runButton" type="button">Run</button>
+            </div>
+
+            <div class="panel">
+              <span class="panel-label">Current Phase</span>
+              <strong id="phaseText">Scope detection</strong>
+              <div class="phase-meter" aria-hidden="true">
+                <span id="phaseMeter"></span>
+              </div>
+            </div>
+
+            <div class="panel stack-panel">
+              <span class="panel-label">Provisioned Stack</span>
+              <ul id="stackList"></ul>
+            </div>
+
+            <div class="panel metrics-panel">
+              <span class="panel-label">Runtime Metrics</span>
+              <dl>
+                <div>
+                  <dt>Pods</dt>
+                  <dd id="podsMetric">0</dd>
+                </div>
+                <div>
+                  <dt>Users</dt>
+                  <dd id="usersMetric">0</dd>
+                </div>
+                <div>
+                  <dt>Cost/mo</dt>
+                  <dd id="costMetric">$0</dd>
+                </div>
+                <div>
+                  <dt>p95 save</dt>
+                  <dd id="latencyMetric">0 ms</dd>
+                </div>
+              </dl>
+            </div>
+          </aside>
+
+          <section class="terminal-panel" aria-label="Terminal output">
+            <div class="command-banner">
+              <span class="prompt">$</span>
+              <span id="commandText">ai-dev-agent idle --await-request</span>
+            </div>
+            <div class="terminal-output" id="terminalOutput" role="log" aria-live="polite"></div>
+            <div class="terminal-cursor" aria-hidden="true">
+              <span class="prompt">$</span>
+              <span class="cursor-block"></span>
+            </div>
+          </section>
+        </div>
+
+        <footer class="timeline" aria-label="Simulation progress">
+          <div class="timeline-track">
+            <span id="timelineFill"></span>
+          </div>
+          <span class="timeline-label" id="timelineLabel">initializing</span>
+        </footer>
+      </section>
+
+      <div class="external-controls">
+        <button class="control-button" id="replayButton" type="button" title="Reset simulation">Reset</button>
+      </div>
+
+      <section class="app-preview" id="appPreview" aria-label="Final tiny notes app preview">
+        <div class="app-chrome">
+          <span>notes.local</span>
+          <span id="appStatus">200 OK</span>
+        </div>
+        <div class="app-body">
+          <h1>Add Note</h1>
+          <label class="visually-hidden" for="noteInput">Note</label>
+          <input id="noteInput" type="text" autocomplete="off" spellcheck="false" readonly>
+          <button id="saveButton" type="button">Save</button>
+          <p class="app-error" id="appError">Infrastructure dependency graph unavailable.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

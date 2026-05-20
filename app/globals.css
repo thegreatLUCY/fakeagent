@@ -344,11 +344,20 @@ a {
   transition: opacity 600ms ease, transform 600ms ease, filter 600ms ease;
 }
 
-.terminal-shell.app-focus > .topbar,
-.terminal-shell.app-focus > .workspace,
-.terminal-shell.app-focus > .timeline {
-  filter: brightness(0.5) saturate(0.85);
-  transition: filter 600ms ease;
+.terminal-shell.app-focus::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: rgba(2, 5, 8, 0.82);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  animation: dimIn 520ms ease both;
+}
+
+@keyframes dimIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .terminal-shell.crisis {
@@ -775,6 +784,11 @@ a {
 .app-preview.active {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 40px 120px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(86, 200, 255, 0.15);
 }
 
 .app-preview.crashed {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ChaosLevel } from "@/lib/types";
 
@@ -26,15 +26,57 @@ const CHAOS_OPTIONS: Array<{
   }
 ];
 
+const STACK_OPTIONS = [
+  "React",
+  "Next.js",
+  "Vue",
+  "Svelte",
+  "TypeScript",
+  "Tailwind",
+  "Supabase",
+  "Postgres",
+  "Prisma",
+  "Redis",
+  "MongoDB",
+  "Docker",
+  "Kubernetes",
+  "Vercel",
+  "AWS",
+  "tRPC",
+  "GraphQL",
+  "Stripe",
+  "Clerk",
+  "OpenAI",
+  "Groq",
+  "LangChain",
+  "Vector DB",
+  "Kafka"
+];
+
 export default function GenerateForm() {
   const router = useRouter();
   const [appIdea, setAppIdea] = useState("");
-  const [stack, setStack] = useState("");
+  const [selectedStack, setSelectedStack] = useState<string[]>([]);
+  const [customStack, setCustomStack] = useState("");
   const [chaos, setChaos] = useState<ChaosLevel>("enterprise");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const disabled = submitting || appIdea.trim().length < 2;
+
+  const combinedStack = useMemo(() => {
+    const extras = customStack
+      .split(/[,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return [...selectedStack, ...extras].join(", ");
+  }, [selectedStack, customStack]);
+
+  function toggleStack(item: string) {
+    setSelectedStack((prev) =>
+      prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+    );
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +89,7 @@ export default function GenerateForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           appIdea: appIdea.trim(),
-          suggestedStack: stack.trim(),
+          suggestedStack: combinedStack,
           chaosLevel: chaos
         })
       });
@@ -68,7 +110,7 @@ export default function GenerateForm() {
   return (
     <main className="generate-shell">
       <div className="generate-card">
-        <h1>ai-dev-agent</h1>
+        <h1>AI-dev-agent</h1>
         <p className="tagline">
           Type a tiny app idea. Watch a confident AI agent overengineer it into a
           cloud-native incident. Share the recording.
@@ -88,31 +130,35 @@ export default function GenerateForm() {
             />
           </label>
 
-          <label>
-            Suggested stack (optional)
-            <span className="hint">Example: React, Supabase, Redis, Docker, AI agents</span>
+          <div>
+            <span className="section-label">
+              Suggested stack <span className="section-hint">(pick any)</span>
+            </span>
+            <div className="stack-chip-row" role="group" aria-label="Suggested stack">
+              {STACK_OPTIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`stack-chip${selectedStack.includes(item) ? " selected" : ""}`}
+                  aria-pressed={selectedStack.includes(item)}
+                  onClick={() => toggleStack(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
             <input
               type="text"
-              value={stack}
-              onChange={(e) => setStack(e.target.value)}
+              className="stack-custom"
+              value={customStack}
+              onChange={(e) => setCustomStack(e.target.value)}
+              placeholder="or type your own, comma-separated"
               maxLength={200}
             />
-          </label>
+          </div>
 
           <div>
-            <span
-              style={{
-                display: "block",
-                marginBottom: 8,
-                color: "var(--text)",
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase"
-              }}
-            >
-              Chaos level
-            </span>
+            <span className="section-label">Chaos level</span>
             <div className="chaos-row" role="radiogroup" aria-label="Chaos level">
               {CHAOS_OPTIONS.map((opt) => (
                 <button

@@ -163,6 +163,71 @@ a {
   box-shadow: 0 0 0 3px rgba(86, 200, 255, 0.09);
 }
 
+.section-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section-hint {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.stack-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.stack-chip {
+  padding: 5px 10px;
+  border: 1px solid rgba(143, 162, 174, 0.28);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, 0.6);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.stack-chip:hover {
+  border-color: rgba(86, 200, 255, 0.5);
+}
+
+.stack-chip.selected {
+  border-color: rgba(86, 200, 255, 0.65);
+  background: rgba(86, 200, 255, 0.14);
+  color: #ecf6ff;
+}
+
+.stack-custom {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid rgba(143, 162, 174, 0.22);
+  border-radius: 8px;
+  background: rgba(5, 8, 11, 0.6);
+  color: #f4fbff;
+  font-size: 12px;
+  outline: none;
+}
+
+.stack-custom::placeholder {
+  color: var(--dim);
+}
+
+.stack-custom:focus {
+  border-color: rgba(86, 200, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(86, 200, 255, 0.09);
+}
+
 .chaos-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -258,10 +323,11 @@ a {
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
   width: min(96vw, 1480px);
-  height: min(94vh, 880px);
-  min-height: 620px;
+  height: 100dvh;
+  max-height: 100dvh;
   margin: 0 auto;
-  padding: clamp(12px, 2vw, 22px);
+  padding: clamp(8px, 1.5vw, 18px);
+  overflow: hidden;
 }
 
 .terminal-shell {
@@ -386,8 +452,9 @@ a {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(230px, 300px) 1fr;
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
   min-height: 0;
+  min-width: 0;
 }
 
 .sidebar {
@@ -880,17 +947,15 @@ a {
 }
 
 @media (max-width: 900px) {
-  .watch-shell {
-    height: auto;
-    min-height: 100vh;
-  }
-
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .sidebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 30dvh;
+    overflow: auto;
     border-right: 0;
     border-bottom: 1px solid rgba(143, 162, 174, 0.14);
   }
@@ -903,7 +968,7 @@ a {
 @media (max-width: 620px) {
   .watch-shell {
     width: 100vw;
-    padding: 8px;
+    padding: 6px;
   }
 
   .terminal-shell {
@@ -912,6 +977,7 @@ a {
 
   .sidebar {
     grid-template-columns: 1fr;
+    max-height: 26dvh;
   }
 
   .line {

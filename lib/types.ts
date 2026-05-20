@@ -61,6 +61,31 @@ export type EventAction =
   | "crashApp"
   | "finish";
 
+export interface MetricsPatch {
+  pods?: number;
+  users?: number;
+  cost?: number;
+  latency?: number | string;
+  agents?: number;
+  tokens?: number | string;
+  incidents?: number;
+  p99?: number | string;
+}
+
+export type ConfidenceTone = "high" | "mid" | "low";
+
+export interface ConfidencePatch {
+  value: number;
+  label: string;
+  tone: ConfidenceTone;
+}
+
+export interface AsciiBarPayload {
+  percent: number;
+  width?: number;
+  label?: string;
+}
+
 export interface AnimationEvent {
   level: EventLevel;
   text?: string;
@@ -70,12 +95,10 @@ export interface AnimationEvent {
   progress?: number;
   command?: string;
   stack?: string | string[];
-  metrics?: {
-    pods?: number;
-    users?: number;
-    cost?: number;
-    latency?: number | string;
-  };
+  metrics?: MetricsPatch;
+  confidence?: ConfidencePatch;
+  bar?: AsciiBarPayload;
+  badge?: string;
   action?: EventAction;
 }
 

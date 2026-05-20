@@ -242,7 +242,13 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
   };
 
   // --- phase 1: scope ---
-  phase(PHASE_LABELS.scope, 2, { metrics: { pods: 0, users: 0, cost: 0, latency: 0 } });
+  phase(PHASE_LABELS.scope, 2, {
+    metrics: {
+      pods: 0, users: 0, cost: 0, latency: 0,
+      agents: 0, tokens: 0, incidents: 0, p99: 0
+    },
+    confidence: { value: 99.7, label: "99.7%", tone: "high" }
+  });
   command(
     `ai-dev-agent scaffold --profile resolved --target ${appSlug} --confidence production`
   );
@@ -280,7 +286,12 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
   COMMON_FRAMEWORK_PACKAGES.forEach((pkg, idx) =>
     npmFetch(pkg, 70 + idx * 6, "(cache miss)")
   );
-  e("success", "added 191 packages, audited 192 packages in 7s");
+  e("npm", "installing 191 packages...", {
+    bar: { percent: 64, width: 16 }
+  });
+  e("success", "added 191 packages, audited 192 packages in 7s", {
+    metrics: { tokens: "12.4k" }
+  });
   e(
     "metrics",
     "[METRICS] Bundle size: 42.8 kB gzip. Active users: 0."
@@ -348,7 +359,9 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
   const imageCount = Math.min(profile.containerCount, DOCKER_IMAGES.length);
   for (let i = 0; i < imageCount; i += 1) {
     const image = DOCKER_IMAGES[i];
-    e("docker", `[+] Pulling ${image}`);
+    e("docker", `pulling ${image}`, {
+      bar: i === 0 ? { percent: 47, width: 16 } : undefined
+    });
     e(
       "docker",
       `[+] Downloaded ${image} sha256:${Math.floor(rng() * 1e16).toString(16).padStart(16, "0")}`
@@ -490,8 +503,11 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
       metrics: {
         pods: Math.floor(profile.peakPods * 0.1),
         cost: moneyDelta(profile, 0.45),
-        latency: 6100
-      }
+        latency: 6100,
+        agents: profile.agentLineCount,
+        tokens: "1.8M"
+      },
+      confidence: { value: 87, label: "87.0%", tone: "mid" }
     });
     command(
       "node scripts/spawn-agents.mjs --squad architecture,sre,security,growth,monetization"
@@ -530,8 +546,10 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
       metrics: {
         pods: Math.floor(profile.peakPods * 0.12),
         cost: moneyDelta(profile, 0.66),
-        latency: 11300
-      }
+        latency: 11300,
+        tokens: "8.2M"
+      },
+      confidence: { value: 64, label: "64.0%", tone: "mid" }
     });
     command(`kubectl apply -f infra/gpu-${ending.domainNoun}-categorizer.yaml`);
     e(
@@ -735,8 +753,11 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
       pods: Math.max(1, Math.floor(profile.peakPods * 0.17)),
       users: 1,
       cost: profile.peakCost,
-      latency: profile.finalLatency + 5000
-    }
+      latency: profile.finalLatency + 5000,
+      incidents: 1,
+      p99: "∞"
+    },
+    confidence: { value: 12, label: "12.0%", tone: "low" }
   });
   e(
     "info",
@@ -767,6 +788,10 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
     "error",
     `[SERVICE-MESH] circuit open: ${appSlug}-api -> ${ending.domainNoun}-intent -> vector-db -> redis -> postgres -> ${appSlug}-api.`
   );
+  e("warn", "[PAGER] escalating to oncall-agent", {
+    stack: "oncall-agent",
+    metrics: { incidents: 7 }
+  });
   e("fatal", `[FATAL] ${config.failureLine}`, {
     action: "crashApp",
     metrics: {

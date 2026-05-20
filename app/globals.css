@@ -344,9 +344,11 @@ a {
   transition: opacity 600ms ease, transform 600ms ease, filter 600ms ease;
 }
 
-.terminal-shell.app-focus {
-  filter: brightness(0.55) saturate(0.9);
-  transform: scale(0.992);
+.terminal-shell.app-focus > .topbar,
+.terminal-shell.app-focus > .workspace,
+.terminal-shell.app-focus > .timeline {
+  filter: brightness(0.5) saturate(0.85);
+  transition: filter 600ms ease;
 }
 
 .terminal-shell.crisis {

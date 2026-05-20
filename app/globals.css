@@ -345,9 +345,8 @@ a {
 }
 
 .terminal-shell.app-focus {
-  opacity: 0.42;
-  filter: blur(1px) saturate(0.75);
-  transform: scale(0.985);
+  filter: brightness(0.55) saturate(0.9);
+  transform: scale(0.992);
 }
 
 .terminal-shell.crisis {
@@ -758,10 +757,13 @@ a {
   z-index: 5;
   width: min(420px, calc(100vw - 44px));
   overflow: hidden;
-  border: 1px solid rgba(143, 162, 174, 0.3);
+  border: 1px solid rgba(86, 200, 255, 0.42);
   border-radius: 10px;
-  background: #0b0e11;
-  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.62);
+  background: #11171d;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 30px 80px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(0, 0, 0, 0.6);
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -42%) scale(0.92);

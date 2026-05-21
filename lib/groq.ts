@@ -25,7 +25,103 @@ Rules:
 - Tone is COMPLETELY SERIOUS, professional, technically convincing. Humor comes from absurd overengineering, not jokes.
 - Pick endingTemplate that best matches the app's core verb (saving a form, checking a box, logging in, uploading, searching, sending a message, checking out, generating a report, viewing a dashboard, creating a calendar event, booking, updating a profile, recommending, mapping/routing, AI assistant). If none fit cleanly, use "save_form_crash".
 - Names like "WalkPilot" are great. Avoid generic names like "App" or "ProjectX".
+- failureLine should sound like a real fatal log a senior engineer would page on. NEVER admit the cause is "the system was over-engineered". Blame a specific subsystem (CRDT merge, KMS rotation, circuit breaker, replication lag) for a trivial action.
+- services names should sound real (e.g. "walker-matching-worker", "lead-scoring-projector", "habit-completion-sidecar"). NOT generic ("api", "worker"). NOT cute ("vibe-engine").
+- Each preflight question must end with "?". Two short choices each. One choice is usually "yes" or "confirm".
 - Output JSON only, no explanation.`;
+
+const EXAMPLES: Array<{ in: string; out: string }> = [
+  {
+    in: `App idea: a dog walking scheduler
+Suggested stack: React, Supabase, Redis, Docker, AI agents
+Chaos level: enterprise
+
+Return the JSON config now.`,
+    out: JSON.stringify({
+      appTitle: "WalkPilot",
+      endingTemplate: "booking_crash",
+      finalUILabel: "Book Walk",
+      sampleInput: "Tuesday 4pm",
+      failureTrigger: "walk booking event",
+      failureLine:
+        "Distributed scheduling consistency check failed after one booking request.",
+      services: [
+        "walk-command-service",
+        "walker-matching-worker",
+        "calendar-sync-sidecar",
+        "pet-profile-cache",
+        "route-optimization-vector-index",
+        "walker-payouts-ledger",
+        "booking-saga-orchestrator"
+      ],
+      preflightQuestions: [
+        { prompt: "Initialize Git repository and release workflow?", choices: ["yes", "no"] },
+        { prompt: "Generate Dockerized local development environment?", choices: ["yes", "use host runtime"] },
+        { prompt: "Enable route optimization and walker-matching agents?", choices: ["yes", "defer agents"] },
+        { prompt: "Provision Redis cache for booking availability?", choices: ["yes", "not needed"] }
+      ]
+    })
+  },
+  {
+    in: `App idea: a habit tracker
+Suggested stack: Next.js, Postgres, Vercel
+Chaos level: realistic
+
+Return the JSON config now.`,
+    out: JSON.stringify({
+      appTitle: "HabitFlow",
+      endingTemplate: "checkbox_crash",
+      finalUILabel: "Mark Complete",
+      sampleInput: "drink water",
+      failureTrigger: "habit completion event",
+      failureLine:
+        "Append-only habit ledger refused write: habit already exists in terminal state graph.",
+      services: [
+        "habit-command-service",
+        "streak-projector",
+        "habit-audit-log",
+        "completion-webhook-relay",
+        "habit-ontology-service"
+      ],
+      preflightQuestions: [
+        { prompt: "Initialize Git repository and release workflow?", choices: ["yes", "no"] },
+        { prompt: "Generate event-sourced habit ledger?", choices: ["yes", "use single table"] },
+        { prompt: "Enable streak prediction model on each completion?", choices: ["yes", "defer model"] },
+        { prompt: "Continue with production-ready cloud-native defaults?", choices: ["confirm", "minimal mode"] }
+      ]
+    })
+  },
+  {
+    in: `App idea: a recipe app
+Suggested stack: React, Stripe, OpenAI
+Chaos level: startup
+
+Return the JSON config now.`,
+    out: JSON.stringify({
+      appTitle: "PrepPilot",
+      endingTemplate: "save_form_crash",
+      finalUILabel: "Add Ingredient",
+      sampleInput: "salt",
+      failureTrigger: "ingredient save event",
+      failureLine:
+        "Ingredient ontology service returned 409 Conflict: 'salt' already exists in canonical food graph.",
+      services: [
+        "recipe-command-service",
+        "ingredient-ontology-service",
+        "pantry-projector",
+        "shopping-list-saga",
+        "nutrition-llm-router",
+        "checkout-webhook-relay"
+      ],
+      preflightQuestions: [
+        { prompt: "Initialize Git repository and release workflow?", choices: ["yes", "no"] },
+        { prompt: "Generate Dockerized local development environment?", choices: ["yes", "use host runtime"] },
+        { prompt: "Enable AI-powered nutrition narration on each recipe?", choices: ["yes", "defer agents"] },
+        { prompt: "Set up Stripe for ingredient marketplace?", choices: ["yes", "not yet"] }
+      ]
+    })
+  }
+];
 
 function buildUserPrompt(
   appIdea: string,
@@ -75,6 +171,10 @@ export async function generateConfig(
   const groq = new Groq({ apiKey });
   let raw = "";
   try {
+    const fewShot = EXAMPLES.flatMap((ex) => [
+      { role: "user" as const, content: ex.in },
+      { role: "assistant" as const, content: ex.out }
+    ]);
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       temperature: 0.85,
@@ -82,6 +182,7 @@ export async function generateConfig(
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
+        ...fewShot,
         {
           role: "user",
           content: buildUserPrompt(appIdea, suggestedStack, chaosLevel)

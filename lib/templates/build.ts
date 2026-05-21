@@ -193,6 +193,94 @@ function fillTemplate(
   return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
 }
 
+interface StackLog {
+  level: EventLevel;
+  badge?: string;
+  text: string;
+}
+
+const STACK_PACKS: Record<string, StackLog[]> = {
+  supabase: [
+    { level: "cloud", badge: "SUPABASE", text: "[SUPABASE] project linked: org_47xn · region us-east-1 · pooler enabled" },
+    { level: "info", badge: "SUPABASE", text: "[SUPABASE] applying migration 20260520_create_{domain}_table.sql" },
+    { level: "info", badge: "SUPABASE", text: "[SUPABASE] RLS policies enabled on {domain}s (auth.uid() = user_id)" }
+  ],
+  stripe: [
+    { level: "info", badge: "STRIPE", text: "[STRIPE] webhook endpoint registered: /api/webhooks/stripe/{domain}-completed" },
+    { level: "info", badge: "STRIPE", text: "[STRIPE] signing secret rotated: whsec_a3f7c2…b91d4 (kept old for 24h)" }
+  ],
+  clerk: [
+    { level: "info", badge: "CLERK", text: "[CLERK] identity pool initialized: 0 users, 14 organizations" },
+    { level: "cloud", badge: "CLERK", text: "[CLERK] enabled MFA, SSO, magic link, passkeys, OTP, social, GDPR, COPPA, CCPA" }
+  ],
+  openai: [
+    { level: "info", badge: "OPENAI", text: "[OPENAI] api key resolved scope=org_47xn budget=$10,000.00 / month" },
+    { level: "warn", badge: "OPENAI", text: "[OPENAI] tokens-per-minute throttle: 60000 tpm. current 0 tpm. headroom: infinite." }
+  ],
+  groq: [
+    { level: "info", badge: "GROQ", text: "[GROQ] connection warmed: llama-3.3-70b on lpu_us-east-1 (cold start eliminated)" }
+  ],
+  langchain: [
+    { level: "info", badge: "AGENT", text: "[LANGCHAIN] composing chain: prompt → model → parser → reflection → retry → reflection → retry → parser" },
+    { level: "warn", badge: "LANGCHAIN", text: "[LANGCHAIN] 14 modules deprecated in 0.4. Chain unaffected — we vendored 0.1." }
+  ],
+  kafka: [
+    { level: "info", badge: "KAFKA", text: "[KAFKA] topic {domain}-events created partitions=64 replication=3 retention=7d" },
+    { level: "k8s", badge: "KAFKA", text: "[KAFKA] broker-0 leader election won by broker-1 (broker-0 still warming up)" }
+  ],
+  prisma: [
+    { level: "info", badge: "PRISMA", text: "[PRISMA] introspection complete, 14 models generated" },
+    { level: "info", badge: "PRISMA", text: "[PRISMA] migration 20260520_init applied to dev, staging, prod, eu-prod, ap-prod" }
+  ],
+  trpc: [
+    { level: "info", badge: "TRPC", text: "[TRPC] generated 47 procedures across 8 routers (96.4 kB of type-safe RPC)" }
+  ],
+  graphql: [
+    { level: "info", badge: "GRAPHQL", text: "[GRAPHQL] schema stitched from 8 subgraphs (412 types, 1284 fields)" },
+    { level: "warn", badge: "GRAPHQL", text: "[GRAPHQL] N+1 detector armed in dev only. Prod uses 14 dataloaders." }
+  ],
+  mongodb: [
+    { level: "info", badge: "MONGO", text: "[MONGO] replica set rs0 initiated: primary, secondary-1, secondary-2, arbiter" },
+    { level: "warn", badge: "MONGO", text: "[MONGO] index on {domain}s.user_id chose collection scan (no rows yet)" }
+  ],
+  aws: [
+    { level: "cloud", badge: "IAM", text: "[IAM] role arn:aws:iam::847291847291:role/{slug}-prod created with 812 inline policies" },
+    { level: "cloud", badge: "STS", text: "[STS] cross-account deploy role assumed (expires 3600s)" }
+  ],
+  vercel: [
+    { level: "cloud", badge: "VERCEL", text: "[VERCEL] preview URL: {slug}-git-main.vercel.app (rotates on every commit)" }
+  ],
+  tailwind: [
+    { level: "info", badge: "TAILWIND", text: "[TAILWIND] purge sweep: kept 47 of 12,847 classes (99.6% pruned)" }
+  ],
+  typescript: [
+    { level: "info", badge: "TS", text: "[TS] strict: yes. exactOptionalPropertyTypes: no — would break 1,247 existing files." }
+  ],
+  react: [
+    { level: "info", badge: "REACT", text: "[REACT] StrictMode enabled (every effect runs twice for educational reasons)" }
+  ],
+  "next.js": [
+    { level: "info", badge: "NEXT", text: "[NEXT] generated 14 static routes, 0 dynamic. Server actions: enabled." }
+  ],
+  svelte: [
+    { level: "info", badge: "SVELTE", text: "[SVELTE] runes migration: 47/47 components converted automatically" }
+  ],
+  vue: [
+    { level: "error", badge: "VUE", text: "[VUE] vue@2 → vue@3 migration blocked by 14 deprecated $children references. Continuing anyway." }
+  ]
+};
+
+function normalizeStackKey(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+function parseStackItems(suggestedStack: string): string[] {
+  return suggestedStack
+    .split(/[,;]+/)
+    .map((s) => normalizeStackKey(s))
+    .filter(Boolean);
+}
+
 export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
   const profile = CHAOS_PROFILES[config.chaosLevel] ?? CHAOS_PROFILES.startup;
   const rng = makeRng(seedFromString(`${config.appTitle}|${config.appIdea}`));
@@ -332,6 +420,22 @@ export function buildEvents(config: GeneratedConfig): AnimationEvent[] {
       "info",
       "[INFO] Vulnerabilities deferred to security microservice backlog."
     );
+  }
+
+  // --- stack-pack injection (logs specific to the chips the user picked) ---
+  const stackVars: Record<string, string> = {
+    ...cascadeVars,
+    slug: appSlug
+  };
+  const seenStackKeys = new Set<string>();
+  for (const item of parseStackItems(config.suggestedStack)) {
+    if (seenStackKeys.has(item)) continue;
+    seenStackKeys.add(item);
+    const pack = STACK_PACKS[item];
+    if (!pack) continue;
+    for (const log of pack) {
+      e(log.level, fillTemplate(log.text, stackVars), { badge: log.badge });
+    }
   }
 
   // --- phase 3: containers ---

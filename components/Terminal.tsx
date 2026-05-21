@@ -120,6 +120,34 @@ function AsciiBar({ percent, width = 18, label }: AsciiBarPayload) {
   );
 }
 
+function useAnimatedNumber(target: number, duration = 700): number {
+  const [displayed, setDisplayed] = useState(target);
+  const fromRef = useRef(target);
+  const startRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    fromRef.current = displayed;
+    startRef.current = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startRef.current) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = fromRef.current + (target - fromRef.current) * eased;
+      setDisplayed(t >= 1 ? target : Math.round(next));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+    // intentionally don't depend on `displayed`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, duration]);
+
+  return displayed;
+}
+
 function delayFor(event: AnimationEvent): number {
   let delay = 72;
   if (event.pause !== undefined) {
@@ -188,6 +216,20 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
   const [actionInput, setActionInput] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [shareCopied, setShareCopied] = useState(false);
+  const [showPostmortem, setShowPostmortem] = useState(false);
+
+  const animatedPods = useAnimatedNumber(metrics.pods);
+  const animatedCost = useAnimatedNumber(metrics.cost);
+  const animatedAgents = useAnimatedNumber(metrics.agents);
+  const animatedIncidents = useAnimatedNumber(metrics.incidents);
+
+  useEffect(() => {
+    if (appPhase === "crashed") {
+      const t = window.setTimeout(() => setShowPostmortem(true), 1400);
+      return () => window.clearTimeout(t);
+    }
+    setShowPostmortem(false);
+  }, [appPhase]);
 
   const outputRef = useRef<HTMLDivElement | null>(null);
   const lineKeyRef = useRef(0);
@@ -618,7 +660,7 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
                 <div>
                   <dt>Pods</dt>
                   <dd className={shellMode === "crisis" ? "up" : ""}>
-                    {metrics.pods.toLocaleString("en-US")}
+                    {animatedPods.toLocaleString("en-US")}
                   </dd>
                 </div>
                 <div>
@@ -628,7 +670,7 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
                 <div>
                   <dt>Cost/mo</dt>
                   <dd className={shellMode === "crisis" ? "up" : "warn"}>
-                    {money(metrics.cost)}
+                    {money(animatedCost)}
                   </dd>
                 </div>
                 <div>
@@ -648,7 +690,7 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
                 <div>
                   <dt>Agents</dt>
                   <dd className={shellMode === "crisis" ? "up" : ""}>
-                    {metrics.agents}
+                    {animatedAgents}
                   </dd>
                 </div>
                 <div>
@@ -658,7 +700,7 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
                 <div>
                   <dt>Incidents</dt>
                   <dd className={shellMode === "crisis" ? "up" : "ok"}>
-                    {metrics.incidents}
+                    {animatedIncidents}
                   </dd>
                 </div>
                 <div>
@@ -755,6 +797,37 @@ export default function Terminal({ config, shareUrl }: TerminalProps) {
             </span>
           </div>
         </footer>
+
+        {showPostmortem && (
+          <aside className="postmortem-card" aria-label="Auto-generated incident postmortem">
+            <header className="postmortem-head">
+              <span className="postmortem-eyebrow">incident postmortem</span>
+              <span className="postmortem-sev">SEV-0 · existential</span>
+            </header>
+            <h3>{config.appTitle} · prod-us-east-1</h3>
+            <dl className="postmortem-meta">
+              <div>
+                <dt>impact</dt>
+                <dd>1 of 1 users affected (100%)</dd>
+              </div>
+              <div>
+                <dt>duration</dt>
+                <dd>still ongoing</dd>
+              </div>
+            </dl>
+            <p className="postmortem-cause">
+              <strong>Root cause:</strong> {config.failureLine}
+            </p>
+            <ul className="postmortem-actions">
+              <li>Pivot to B2B.</li>
+              <li>Schedule offsite to align on values.</li>
+              <li>Hire a Chief Reliability Officer.</li>
+            </ul>
+            <span className="postmortem-sig">
+              — generated by ai-dev-agent · status: filing itself
+            </span>
+          </aside>
+        )}
 
         {showAppReveal && (
           <div className={`app-reveal${appCrashed ? " crashed" : ""}`}>
